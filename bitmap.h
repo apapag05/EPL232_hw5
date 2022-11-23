@@ -7,8 +7,10 @@
 
 typedef struct
 {
-    HEADER fileheader;
+    HEADER *header; //not sure if pointer
     BYTE* data;
 } BITMAP;
+
+//void initializeBM(BITMAP *bm);
 
 #endif
