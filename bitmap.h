@@ -7,9 +7,9 @@
 
 typedef struct
 {
-    HEADER *header; //not sure if pointer
+    HEADER header; //not sure if pointer
     BYTE* data;
-} BITMAP;
+} __attribute__ ((__packed__)) BITMAP;
 
 //void initializeBM(BITMAP *bm);
 

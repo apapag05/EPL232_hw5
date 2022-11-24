@@ -1,177 +1,215 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "list.h"
 #include "header.h"
 #include "bitmap.h"
 
-static void writeImage(BITMAP *bmGray, int sizeData, BITMAP *bm);
-
-static void readHeader(FILE *fp, HEADER *header)
-{
-    // HEADER *header;
-    // header=(HEADER*)malloc(sizeof(HEADER));
-    // char arr[1];
-    fread(&(header->bfType1), 1, 1, fp);
-    fread(&(header->bfType2), 1, 1, fp);
-    fread(&(header->bfSize), 4, 1, fp);
-    fread(&(header->bfReserved1), 2, 1, fp);
-    fread(&(header->bfReserved2), 2, 1, fp);
-    fread(&(header->bfOffBits), 4, 1, fp);
-    fread(&(header->biSize), 4, 1, fp);
-    fread(&(header->biWidth), 4, 1, fp);
-    fread(&(header->biHeight), 4, 1, fp);
-    fread(&(header->biPlanes), 2, 1, fp);
-    fread(&(header->biBitCount), 2, 1, fp);
-    fread(&(header->biCompression), 4, 1, fp);
-    fread(&(header->biSizeimage), 4, 1, fp);
-    fread(&(header->biXPelsPerMeter), 4, 1, fp);
-    fread(&(header->biYPelsPerMeter), 4, 1, fp);
-    fread(&(header->biClrUsed), 4, 1, fp);
-    fread(&(header->biClrImportant), 4, 1, fp);
-}
+static void writeImage(BITMAP bm, char* filename, int dataBytes);
+static void readData(char *filename, BITMAP *bm, int size);
+static void printHeader(HEADER *header);
+void list(int argc, char *argv[]);
+static void copyHeader(BITMAP *bm, BITMAP *bm2);
 
 static void printHeader(HEADER *header)
 {
     printf("\nBITMAP_FILE_HEADER\n==================\n");
     printf("bfType: %c%c\n", header->bfType1, header->bfType2);
-    printf("bfSize: %d\n", header->bfSize);
+    printf("bfSize: %u\n", header->bfSize);
     printf("bfResereved1: %hu\n", header->bfReserved1);
     printf("bfResereved2: %hu\n", header->bfReserved2);
-    printf("bfOffBits: %d\n", header->bfOffBits);
+    printf("bfOffBits: %u\n", header->bfOffBits);
     printf("\nBITMAP_INFO_HEADER\n==================\n");
-    printf("biSize: %d\n", header->biSize);
-    printf("biWidth: %d\n", header->biWidth);
-    printf("biHeight: %d\n", header->biHeight);
+    printf("biSize: %u\n", header->biSize);
+    printf("biWidth: %u\n", header->biWidth);
+    printf("biHeight: %u\n", header->biHeight);
     printf("biPlanes: %hu\n", header->biPlanes);
     printf("biBitCount: %hu\n", header->biBitCount);
-    printf("biCompression %d\n", header->biCompression);
-    printf("biSizeImage: %d\n", header->biSizeimage);
-    printf("biXPelsPerMeter: %d\n", header->biXPelsPerMeter);
-    printf("biYPelsPerMeter: %d\n", header->biYPelsPerMeter);
-    printf("biClrUsed: %d\n", header->biClrUsed);
-    printf("biClrImportant: %d\n", header->biClrImportant);
+    printf("biCompression %u\n", header->biCompression);
+    printf("biSizeImage: %u\n", header->biSizeimage);
+    printf("biXPelsPerMeter: %u\n", header->biXPelsPerMeter);
+    printf("biYPelsPerMeter: %u\n", header->biYPelsPerMeter);
+    printf("biClrUsed: %u\n", header->biClrUsed);
+    printf("biClrImportant: %u\n", header->biClrImportant);
+}
+
+void grayscale(int argc, char *argv[])
+{
+
+    int i = 2; // CHANGE TO 2
+    while (i < argc && argc > 2)
+    { // CHANGE TO 2
+        BITMAP bm;
+        BITMAP bmGray;
+        char *filename = argv[i];
+
+        FILE *fp = fopen(filename, "rb");
+        fread(&(bm.header), sizeof(HEADER), 1, fp); // read header
+        int numOfPixels = bm.header.biHeight * bm.header.biWidth;
+        int padding = ((bm.header.biWidth) * 3) % 4;
+        printf("\npadding %d\n", padding);
+        int dataBytes = numOfPixels * 3 + bm.header.biHeight * padding * 3;
+        printf("\npixels: %d\n and data bytes %d\n", numOfPixels, dataBytes);
+        bm.data = (BYTE *)malloc(sizeof(BYTE) * dataBytes);
+        readData(filename, &bm, dataBytes);
+        
+        printHeader(&(bm.header));
+
+        int j = 0;
+        BYTE luminance = 0;
+
+        copyHeader(&bm, &bmGray);
+        bmGray.data=(BYTE*)malloc(sizeof(BYTE)*dataBytes);
+
+        for (j = 0; j < dataBytes; j = j + 3)
+        {
+            BYTE R = bm.data[j], G = bm.data[j + 1], B = bm.data[j + 2];
+
+            luminance = round(R * 0.299 + G * 0.587 + B * 0.114);
+            printf("liuminanve %d\n", luminance);
+            printf("i %d byte 1 %hu byte2 %hu byte3 %hu\n", j, bm.data[j], bm.data[j + 1], bm.data[j + 2]);
+            bmGray.data[j] = luminance;
+            bmGray.data[j + 1] = luminance;
+            bmGray.data[j + 2] = luminance;
+            printf("AFTERR byte 1 %hu byte2 %hu byte3 %hu\n", bm.data[j], bm.data[j + 1], bm.data[j + 2]);
+            luminance = 0;
+        }
+        i++;
+        writeImage(bmGray, "grayscale.bmp", dataBytes);
+        // exit(0);
+    }
+}
+
+static void copyHeader(BITMAP *bm, BITMAP *bm2) {
+
+    bm2->header.bfType1=bm->header.bfType1;
+    bm2->header.bfType2=bm->header.bfType2;
+    bm2->header.bfSize=bm->header.bfSize;
+    bm2->header.bfReserved1=bm->header.bfReserved1;
+    bm2->header.bfReserved2=bm->header.bfReserved2;
+    bm2->header.bfOffBits=bm->header.bfOffBits;
+    bm2->header.biSize=bm->header.biSize;
+    bm2->header.biWidth=bm->header.biWidth;
+    bm2->header.biHeight=bm->header.biHeight;
+    bm2->header.biPlanes=bm->header.biPlanes;
+    bm2->header.biBitCount=bm->header.biBitCount;
+    bm2->header.biCompression=bm->header.biCompression;
+    bm2->header.biSizeimage=bm->header.biSizeimage;
+    bm2->header.biXPelsPerMeter=bm->header.biXPelsPerMeter;
+    bm2->header.biYPelsPerMeter=bm->header.biYPelsPerMeter;
+    bm2->header.biClrUsed=bm->header.biClrUsed;
+    bm2->header.biClrImportant=bm->header.biClrImportant;
+    printHeader(&(bm2->header));
+}
+
+static void writeImage(BITMAP bm, char* filename, int dataBytes)
+{
+    FILE *fp2 = fopen(filename, "wb");
+    fwrite(&(bm.header.bfType1), sizeof(BYTE), 1, fp2);
+    fwrite(&(bm.header.bfType2), sizeof(BYTE), 1, fp2);
+    fwrite(&(bm.header.bfSize), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.bfReserved1), sizeof(WORD), 1, fp2);
+    fwrite(&(bm.header.bfReserved2), sizeof(WORD), 1, fp2);
+    fwrite(&(bm.header.bfOffBits), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biSize), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biWidth), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biHeight), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biPlanes), sizeof(WORD), 1, fp2);
+    fwrite(&(bm.header.biBitCount), sizeof(WORD), 1, fp2);
+    fwrite(&(bm.header.biCompression), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biSizeimage), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biXPelsPerMeter), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biYPelsPerMeter), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biClrUsed), sizeof(DWORD), 1, fp2);
+    fwrite(&(bm.header.biClrImportant), sizeof(DWORD), 1, fp2);
+    int k = 0;
+    for (k = 0; k < dataBytes; k++)
+    {
+        fwrite(&(bm.data[k]), sizeof(BYTE), 1, fp2);
+    }
+}
+
+void list(int argc, char *argv[])
+{
+    int i = 2; // CHANGE TO 2
+    while (i < argc && argc > 2)
+    { // CHANGE TO 2
+        BITMAP bm;
+
+        char *filename = argv[i];
+
+        FILE *fp = fopen(filename, "rb");
+        fread(&(bm.header), sizeof(HEADER), 1, fp); // read header
+
+        printHeader(&(bm.header));
+
+        int numOfPixels = bm.header.biHeight * bm.header.biWidth;
+        int padding = ((bm.header.biWidth) * 3) % 4;
+        printf("\npadding %d\n", padding);
+        int dataBytes = numOfPixels * 3 + bm.header.biHeight * padding * 3;
+        printf("\npixels: %d\n and data bytes %d\n", numOfPixels, dataBytes);
+
+        // int numOfPixels = bm.header.biHeight * bm.header.biWidth;
+        // int dataBytes = numOfPixels * 3;
+        // printf("\npixels: %d\n", numOfPixels);
+        bm.data = (BYTE *)malloc(sizeof(BYTE) * dataBytes);
+        readData(filename, &bm, dataBytes);
+        i++;
+        if (i != argc)
+        {
+            printf("\n*******************************");
+        }
+    }
 }
 
 static void readData(char *filename, BITMAP *bm, int size)
 {
     FILE *fp = fopen(filename, "rb");
     fseek(fp, 54, SEEK_SET);
-    int padding = ((bm->header->biWidth) * 3) % 4;
+    int padding = ((bm->header.biWidth) * 3) % 4;
     printf("\npadding %d\n", padding);
     int i = 0;
     int j = 0;
-    // int index=0;
+    int count = 0;
+    int index = 0;
     //%02X
-    for (i = 0; i < bm->header->biHeight; i++)
+    for (i = 0; i < bm->header.biHeight; i++)
     {
-        for (j = 0; j < bm->header->biWidth * 3; j++)
+        for (j = 0; j < (bm->header.biWidth + padding) * 3; j++)
         {
-            fread(&(bm->data[i*bm->header->biWidth*3+j]), 1, 1, fp); // red
-            //printf("i: %d j: %d data[i] %02X\n", i, j, bm->data[i*bm->header->biWidth+j]);
-            //rintf("i: %d j: %d data[i] %02X\n", i, j, bm->data[i]);
+            count++;
+            fread(&(bm->data[index]), 1, 1, fp); // red
+            // printf("i: %d j: %d data[%d] %02X\n", i, j, index, bm->data[index]);
+
+            index++;
         }
-        if (padding != 0)
-        {
-            fseek(fp, padding * 3, SEEK_CUR);
-        }
+        // if (padding != 0) //do not skip
+        // {
+        //     fseek(fp, padding * 3, SEEK_CUR);
+        // }
 
         // printf("i: %d j: %d data[i] %02X\n", i, j, bm->data[i]);
     }
+    printf("count: %d should be: %d\n", count, size);
     fclose(fp);
-}
-
-void list(char *filename, BITMAP *bm)
-{
-    FILE *fp = fopen(filename, "rb");
-    readHeader(fp, bm->header);
-    printHeader(bm->header);
-    fclose(fp);
-}
-
-void grayscale(BITMAP *bm, int sizeData, BITMAP *bmGray)
-{
-    int i = 0;
-    int luminance = 0;
-
-    for (i = 0; i < sizeData; i = i + 3)
-    {
-        BYTE R = bm->data[i], G = bm->data[i + 1], B = bm->data[i + 2];
-
-        luminance = round(R * 0.299 + G * 0.587 + B * 0.114);
-        printf("liuminanve %d\n", luminance);
-        printf("i %d byte 1 %hu byte2 %hu byte3 %hu\n", i, bm->data[i], bm->data[i + 1], bm->data[i + 2]);
-        bm->data[i] = luminance;
-        bm->data[i + 1] = luminance;
-        bm->data[i + 2] = luminance;
-        printf("AFTERR byte 1 %hu byte2 %hu byte3 %hu\n", bm->data[i], bm->data[i + 1], bm->data[i + 2]);
-    
-    }
-    writeImage(bmGray,sizeData,bm);
-}
-
-static void writeImage(BITMAP *bmGray, int sizeData, BITMAP *bm)
-{
-    FILE *fp2=fopen("4x3.bmp", "rb");
-    FILE *fp=fopen("grayscale.bmp", "wb");
-    //fwrite(bm->header,1,sizeof(bm->header),fp);
-    // bmGray->header->bfType1=bm->header->bfType1;
-    // bmGray->header->bfType2=bm->header->bfType2;
-    // bmGray->header->bfSize=bm->header->bfSize;
-    // bmGray->header->bfReserved1=bm->header->bfReserved1;
-    // bmGray->header->bfReserved2=bm->header->bfReserved2;
-    // bmGray->header->bfOffBits=bm->header->bfOffBits;
-    // bmGray->header->biSize=bm->header->biSize;
-    // bmGray->header->biWidth=bm->header->biWidth;
-    // bmGray->header->biHeight=bm->header->biHeight;
-    // bmGray->header->biPlanes=bm->header->biPlanes;
-    // bmGray->header->biBitCount=bm->header->biBitCount;
-    // bmGray->header->biCompression=bm->header->biCompression;
-    // bmGray->header->biSizeimage=bm->header->biSizeimage;
-    // bmGray->header->biXPelsPerMeter=bm->header->biXPelsPerMeter;
-    // bmGray->header->biYPelsPerMeter=bm->header->biYPelsPerMeter;
-    // bmGray->header->biClrUsed=bm->header->biClrUsed;
-    // bmGray->header->biClrImportant=bm->header->biClrImportant;
-    fread(&(bm->header), sizeof(HEADER), 1, fp2);
-    fwrite(&(bm->header),sizeof(HEADER), 1, fp); 
-    fwrite(&(bm->data),1,sizeof(bm->data),fp);    
-    fclose(fp);
-   
 }
 
 int main(int argc, char *argv[])
 {
-    // read header and data
-    int i = 1; // NEED TO CHANGE TO 2
-    while (i < argc && argc > 1)
-    { // CHANGE TO 2
-        BITMAP bm;
-        bm.header = (HEADER *)malloc(sizeof(HEADER));
-        char *filename = argv[i];
-        list(filename, &bm);
-        i++;
-        if (i != argc)
-        {
-            printf("\n*******************************");
-        }
-        // read data
-        int numOfPixels = bm.header->biHeight * bm.header->biWidth;
-        printf("\npixels: %d\n", numOfPixels);
-        bm.data = (BYTE *)malloc(sizeof(BYTE) * numOfPixels * 3);
-        readData(filename, &bm, numOfPixels * 3);
-        int j = 0;
-        for (j = 0; j < numOfPixels * 3; j++)
-        {
-            printf("byte %d value %hu\n", j, bm.data[j]);
-        }
-        FILE *fp=fopen("grayscale.bmp", "wb");
-        //fread(bm.header, sizeof(HEADER), 1, fp2);
-        fwrite(bm.header,sizeof(HEADER), 1, fp); 
-        fwrite(bm.data,1,sizeof(bm.data),fp);
-        // grayscale
-        BITMAP bmGray;
-        bmGray.header = (HEADER *)malloc(sizeof(HEADER));
-        grayscale(&bm, numOfPixels*3, &bmGray); 
+    //  READ OPERATION  //
+    char *operation = argv[1];
+    char *l = "-list\0";
+    char *g = "-grayscale\0";
+    printf("arg %s\n\n", argv[1]);
+    if (strcmp(operation, l) == 0)
+    {
+        printf("firsttt\n");
+        list(argc, argv);
     }
-    
+    else if (strcmp(operation, g) == 0)
+    {
+        printf("seconddd\n\n");
+        grayscale(argc, argv);
+    }
 }

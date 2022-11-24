@@ -28,6 +28,6 @@ typedef struct
     DWORD biClrUsed;
     DWORD biClrImportant;
 
-} HEADER;
+} __attribute__ ((__packed__)) HEADER;
 
 #endif
