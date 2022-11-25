@@ -268,7 +268,7 @@ void encodeStegano(int argc, char *argv[])
                 else
                 {
                     // printf("\n2 p = %d %d\n", p, 254 - (int)pow(2, p) + 1);
-                    cover.data[byte] = cover.data[byte] & 254 - (int)pow(2, 3 - p) + 1; // ola 0 ektos to index pu thelw einai 1
+                    cover.data[byte] = cover.data[byte] & (254 - (int)pow(2, 3 - p) + 1); // ola 0 ektos to index pu thelw einai 1
                 }
                 // printf("cover after : ");
                 // printBinary(cover.data, 0);
@@ -306,12 +306,12 @@ void encodeStegano(int argc, char *argv[])
 
 static void printBinary(BYTE *data, int index)
 {
-    printf("in data %u\n", data[0]);
+    printf("in data %u\n", data[index]);
     int n = 0;
     int binary[8];
     for (n = 0; n < 8; n++)
     {
-        binary[7 - n] = (data[0] >> n) & 1;
+        binary[7 - n] = (data[index] >> n) & 1;
     }
     for (int n = 0; n < 8; n++)
         printf("%d", binary[n]);
@@ -353,16 +353,39 @@ void decodeStegano(int argc, char *argv[])
     }
     int p=0;
     int bit;
-    for (byte=0;byte<6;byte++) { // CHANGE 6 TO DATABYTES
-        printf("byte %d before: ", byte);
-        printBinary(encrypted.data, byte);
-        printBinary(bm.data, byte);
+    for (byte=0;byte<dataBytes;byte++) { // CHANGE 6 TO DATABYTES
+        // printf("\n\nbyte %d encrypted before: ", byte);
+        // printBinary(encrypted.data, byte);
+        // printf("before data[%d] : ", byte);
+        // printBinary(bm.data, byte);
         for (p=0;p<4;p++) {
             // highBit = ((encrypted.data[byte] & (int)(pow(2, 7 - p))) << p) >> 7;
-            bit=(encrypted.data[byte] << (4+p)) >> 7;
-            printf("p = %d bit: %d\n", p, bit);
+            bit=((encrypted.data[byte] & (int)pow(2, 3-p)) << (4+p)) >> 7;
+            // printf("p = %d bit: %d\n", p, bit);
+            if (bit==0) {
+                // printf("bittttt 0\n");
+                bm.data[byte]=bm.data[byte] & (254-(int)pow(2, 3-p)+1);
+                // printf("after 0 data[%d] : ", byte);
+                // printBinary(bm.data, byte);
+            }
+            else {
+                // printf("bittttt 1\n");
+                bm.data[byte]=bm.data[byte] | (int)pow(2, 3-p);
+                // printf("after 1 data[%d] : ", byte);
+                // printBinary(bm.data, byte);
+            }
         }
+        bm.data[byte]=bm.data[byte]<<4;
+        // printf("after final data[%d] : ", byte);
+        // printBinary(bm.data, byte);
     }
+    char c[100];
+    char *fpNew = "new-";
+    strcat(c, fpNew);
+    // printf("file %s\n", fp1);
+    strcat(c, filename);
+    // printf("new file : %s\n", c);
+    writeImage(bm, c, dataBytes);
 }
 
     int main(int argc, char *argv[])
