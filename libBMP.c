@@ -5,8 +5,6 @@
 #include "list.h"
 #include "header.h"
 #include "bitmap.h"
-#define LOW_BIT 0x01  /* binary 00000001 */
-#define HIGH_BIT 0x80 /* binary 10000000 */
 
 static void writeImage(BITMAP bm, char *filename, int dataBytes);
 static void readData(char *filename, BITMAP *bm, int size);
@@ -16,6 +14,8 @@ static void copyHeader(BITMAP *bm, BITMAP *bm2);
 void encodeStegano(int argc, char *argv[]);
 static void printBinary(BYTE *data, int index);
 static void decToBin(int num);
+void decodeStegano(int argc, char *argv[]);
+void encodeText(int argc, char* argv[]);
 
 static void printHeader(HEADER *header)
 {
@@ -336,7 +336,7 @@ void decodeStegano(int argc, char *argv[])
     int dataBytes = numOfPixels * 3 + encrypted.header.biHeight * padding * 3;
     // printf("\npixels: %d\n and data bytes %d\n\n\n", numOfPixels, dataBytes);
 
-    encrypted.data=(BYTE*)malloc(sizeof(BYTE)*dataBytes);
+    encrypted.data = (BYTE *)malloc(sizeof(BYTE) * dataBytes);
     readData(filename, &encrypted, dataBytes);
     // #define LOW_BIT 0x01  /* binary 00000001 */
     // #define HIGH_BIT 0x80 /* binary 10000000 */
@@ -345,37 +345,42 @@ void decodeStegano(int argc, char *argv[])
 
     BITMAP bm;
     copyHeader(&encrypted, &bm);
-    bm.data=(BYTE*)malloc(sizeof(BYTE)*dataBytes);
+    bm.data = (BYTE *)malloc(sizeof(BYTE) * dataBytes);
 
-    int byte=0;
-    for (byte=0;byte<dataBytes;byte++) {
-        bm.data[byte]=0;
+    int byte = 0;
+    for (byte = 0; byte < dataBytes; byte++)
+    {
+        bm.data[byte] = 0;
     }
-    int p=0;
+    int p = 0;
     int bit;
-    for (byte=0;byte<dataBytes;byte++) { // CHANGE 6 TO DATABYTES
+    for (byte = 0; byte < dataBytes; byte++)
+    { // CHANGE 6 TO DATABYTES
         // printf("\n\nbyte %d encrypted before: ", byte);
         // printBinary(encrypted.data, byte);
         // printf("before data[%d] : ", byte);
         // printBinary(bm.data, byte);
-        for (p=0;p<4;p++) {
+        for (p = 0; p < 4; p++)
+        {
             // highBit = ((encrypted.data[byte] & (int)(pow(2, 7 - p))) << p) >> 7;
-            bit=((encrypted.data[byte] & (int)pow(2, 3-p)) << (4+p)) >> 7;
+            bit = ((encrypted.data[byte] & (int)pow(2, 3 - p)) << (4 + p)) >> 7;
             // printf("p = %d bit: %d\n", p, bit);
-            if (bit==0) {
+            if (bit == 0)
+            {
                 // printf("bittttt 0\n");
-                bm.data[byte]=bm.data[byte] & (254-(int)pow(2, 3-p)+1);
+                bm.data[byte] = bm.data[byte] & (254 - (int)pow(2, 3 - p) + 1);
                 // printf("after 0 data[%d] : ", byte);
                 // printBinary(bm.data, byte);
             }
-            else {
+            else
+            {
                 // printf("bittttt 1\n");
-                bm.data[byte]=bm.data[byte] | (int)pow(2, 3-p);
+                bm.data[byte] = bm.data[byte] | (int)pow(2, 3 - p);
                 // printf("after 1 data[%d] : ", byte);
                 // printBinary(bm.data, byte);
             }
         }
-        bm.data[byte]=bm.data[byte]<<4;
+        bm.data[byte] = bm.data[byte] << 4;
         // printf("after final data[%d] : ", byte);
         // printBinary(bm.data, byte);
     }
@@ -388,31 +393,54 @@ void decodeStegano(int argc, char *argv[])
     writeImage(bm, c, dataBytes);
 }
 
-    int main(int argc, char *argv[])
+void encodeText(int argc, char* argv[]) {
+    char *fp1=argv[2];
+    char *fp2=argv[3];
+    FILE *image=fopen(fp1, "rb");
+    FILE *txt=fopen(fp2, "r");
+
+    BITMAP bm;
+    fread(&(bm.header), sizeof(HEADER), 1, image);
+    // printHeader(&(bm.header));
+    bm.data=(BYTE*)malloc(sizeof(BYTE));
+    
+
+}
+
+static int getBit(char *m, int n) {
+
+}
+
+int main(int argc, char *argv[])
+{
+    //  READ OPERATION  //
+    char *operation = argv[1];
+    char *l = "-list\0";
+    char *g = "-grayscale\0";
+    char *enS = "-encodeStegano\0";
+    char *decS = "-decodeStegano\0";
+    char *encT = "-encodeText\0";
+    printf("arg %s\n\n", argv[1]);
+    if (strcmp(operation, l) == 0)
     {
-        //  READ OPERATION  //
-        char *operation = argv[1];
-        char *l = "-list\0";
-        char *g = "-grayscale\0";
-        char *enS = "-encodeStegano\0";
-        char *decS = "-decodeStegano\0";
-        printf("arg %s\n\n", argv[1]);
-        if (strcmp(operation, l) == 0)
-        {
-            printf("firsttt\n");
-            list(argc, argv);
-        }
-        else if (strcmp(operation, g) == 0)
-        {
-            printf("seconddd\n\n");
-            grayscale(argc, argv);
-        }
-        else if (strcmp(operation, enS) == 0)
-        {
-            encodeStegano(argc, argv);
-        }
-        else if (strcmp(operation, decS) == 0)
-        {
-            decodeStegano(argc, argv);
-        }
+        printf("firsttt\n");
+        list(argc, argv);
     }
+    else if (strcmp(operation, g) == 0)
+    {
+        printf("seconddd\n\n");
+        grayscale(argc, argv);
+    }
+    else if (strcmp(operation, enS) == 0)
+    {
+        encodeStegano(argc, argv);
+    }
+    else if (strcmp(operation, decS) == 0)
+    {
+        decodeStegano(argc, argv);
+    }
+    else if (strcmp(operation, encT) == 0)
+    {
+        encodeText(argc, argv);
+    }
+}
