@@ -15,7 +15,9 @@ void encodeStegano(int argc, char *argv[]);
 static void printBinary(BYTE *data, int index);
 static void decToBin(int num);
 void decodeStegano(int argc, char *argv[]);
-void encodeText(int argc, char* argv[]);
+void encodeText(int argc, char *argv[]);
+static int getBit(char *m, int n);
+static int *createPermutationFunction(int N, unsigned int systemkey);
 
 static void printHeader(HEADER *header)
 {
@@ -393,27 +395,139 @@ void decodeStegano(int argc, char *argv[])
     writeImage(bm, c, dataBytes);
 }
 
-void encodeText(int argc, char* argv[]) {
-    char *fp1=argv[2];
-    char *fp2=argv[3];
-    FILE *image=fopen(fp1, "rb");
-    FILE *txt=fopen(fp2, "r");
+void encodeText(int argc, char *argv[])
+{
+    char *fp1 = argv[2];
+    char *fp2 = argv[3];
+    FILE *imageFile = fopen(fp1, "rb");
+    FILE *txtFile = fopen(fp2, "r");
 
     BITMAP bm;
-    fread(&(bm.header), sizeof(HEADER), 1, image);
+    fread(&(bm.header), sizeof(HEADER), 1, imageFile);
     // printHeader(&(bm.header));
-    bm.data=(BYTE*)malloc(sizeof(BYTE));
-    
+    int numOfPixels = bm.header.biHeight * bm.header.biWidth;
+    int padding = ((bm.header.biWidth) * 3) % 4;
+    // printf("\npadding %d\n", padding);
+    int dataBytes = numOfPixels * 3 + bm.header.biHeight * padding * 3;
+    bm.data = (BYTE *)malloc(sizeof(BYTE));
+    readData(fp1, &bm, dataBytes);
 
+    if (!txtFile)
+    {
+        perror("Input error");
+    }
+
+    fseek(txtFile, 0, SEEK_END);
+    int fileSize = ftell(txtFile);
+    printf("filesize: %d\n", fileSize);
+    fseek(txtFile, 0, SEEK_SET);
+
+    char *text = malloc((fileSize + 1) * sizeof(char));
+
+    int i = 0;
+    int c;
+    while (1)
+    {
+        c = fgetc(txtFile);
+        if (c == EOF)
+        {
+            break;
+        }
+        text[i] = (char)c;
+        i++;
+    }
+
+    text[fileSize] = '\0';
+    printf("%s", text);
+
+    int b, o;
+    int *permutation = (int *)malloc(sizeof(int) * dataBytes);
+    permutation = createPermutationFunction(dataBytes, 10);
+    for (i = 0; i < strlen(text) * 8; i++)
+    {
+        b = getBit(text, i);
+        // printf("bit: %d\n", b);
+        o = permutation[i];
+        // printf("o: %d\n", o);
+        // printf("data before %u\n", bm.data[o]);
+        if (b == 0)
+        {
+            // printf("it is 0\n");
+            bm.data[o] = bm.data[o] & 254;
+        }
+        else
+        {
+            // printf("it is 1\n");
+            bm.data[o] = bm.data[o] | 1;
+        }
+        // printf("data after %u\n", bm.data[o]);
+    }
+    char new[100];
+    char *fpNew = "new-";
+    strcat(new, fpNew);
+    // printf("file %s\n", fp1);
+    strcat(new, fp1);
+    // printf("new file : %s\n", c);
+    writeImage(bm, new, dataBytes);
 }
 
-static int getBit(char *m, int n) {
+static int getBit(char *m, int n)
+{
+    printf("size in getbit %lu\n", strlen(m));
+    int totalSize = strlen(m) * 8;
+    int index;
+    int bit;
+    if (n < totalSize)
+    {
+        // printf("total size: %d\n", totalSize);
+        index = n / 8;
+        printf("char %c ascii %d index %d", m[index], m[index], index);
+        bit = ((m[index] & (int)pow(2, 7 - n % 8)) << (0 + (n % 8))) >> 7;
+        printf("bit= %d\n", bit);
+        return bit;
+    }
+    else
+    {
+        return 0;
+    }
+}
 
+static int *createPermutationFunction(int N, unsigned int systemkey)
+{
+    int *arr = (int *)malloc(sizeof(int) * N); // POTE TO KANW FREE?
+    int k;
+    for (k = 0; k < N; k++)
+    {
+        arr[k] = k;
+        // printf("%d, ", arr[k]);
+    }
+
+    int i;
+    int j;
+    int temp;
+    int p;
+    srand(systemkey);
+    for (k = 0; k < N; k++)
+    {
+        printf("\nk %d\n", k);
+        i = rand() % (N - 1);
+        j = rand() % (N - 1);
+        printf("i : %d j : %d\n", i, j);
+        temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+        // for (p = 0; p < N; p++)
+        // {
+        //     printf("%d, ", arr[p]);
+        // }
+    }
+    return arr;
 }
 
 int main(int argc, char *argv[])
 {
     //  READ OPERATION  //
+    // printf("psssss\n");
     char *operation = argv[1];
     char *l = "-list\0";
     char *g = "-grayscale\0";
