@@ -18,6 +18,7 @@ void decodeStegano(int argc, char *argv[]);
 void encodeText(int argc, char *argv[]);
 static int getBit(char *m, int n);
 static int *createPermutationFunction(int N, unsigned int systemkey);
+static void putBit(char *m, int n, int b);
 
 static void printHeader(HEADER *header)
 {
@@ -422,7 +423,7 @@ void encodeText(int argc, char *argv[])
     printf("filesize: %d\n", fileSize);
     fseek(txtFile, 0, SEEK_SET);
 
-    char *text = malloc((fileSize + 1) * sizeof(char));
+    char *text = (char*)malloc((fileSize + 1) * sizeof(char));
 
     int i = 0;
     int c;
@@ -441,8 +442,15 @@ void encodeText(int argc, char *argv[])
     printf("%s", text);
 
     int b, o;
-    int *permutation = (int *)malloc(sizeof(int) * dataBytes);
-    permutation = createPermutationFunction(dataBytes, 10);
+    int *permutation = (int *)malloc(sizeof(int) * (strlen(text) * 8));
+    permutation = createPermutationFunction((strlen(text) * 8), 10);
+    printf("************************strlen %lu", (strlen(text)));
+    // printf("\n\npermutation*****************\n\n");
+    // for (i=0;i<dataBytes;i++) {
+    //     printf("%d, ", permutation[i]);
+    // }
+
+    
     for (i = 0; i < strlen(text) * 8; i++)
     {
         b = getBit(text, i);
@@ -473,7 +481,7 @@ void encodeText(int argc, char *argv[])
 
 static int getBit(char *m, int n)
 {
-    printf("size in getbit %lu\n", strlen(m));
+    // printf("size in getbit %lu\n", strlen(m));
     int totalSize = strlen(m) * 8;
     int index;
     int bit;
@@ -481,9 +489,9 @@ static int getBit(char *m, int n)
     {
         // printf("total size: %d\n", totalSize);
         index = n / 8;
-        printf("char %c ascii %d index %d", m[index], m[index], index);
+        // printf("char %c ascii %d index %d", m[index], m[index], index);
         bit = ((m[index] & (int)pow(2, 7 - n % 8)) << (0 + (n % 8))) >> 7;
-        printf("bit= %d\n", bit);
+        // printf("bit= %d\n", bit);
         return bit;
     }
     else
@@ -509,10 +517,10 @@ static int *createPermutationFunction(int N, unsigned int systemkey)
     srand(systemkey);
     for (k = 0; k < N; k++)
     {
-        printf("\nk %d\n", k);
+        // printf("\nk %d\n", k);
         i = rand() % (N - 1);
         j = rand() % (N - 1);
-        printf("i : %d j : %d\n", i, j);
+        // printf("i : %d j : %d\n", i, j);
         temp = arr[i];
         arr[i] = arr[j];
         arr[j] = temp;
@@ -522,6 +530,100 @@ static int *createPermutationFunction(int N, unsigned int systemkey)
         // }
     }
     return arr;
+}
+
+void decodeText(int argc, char* argv[]) {
+    char *fp1=argv[2];
+    char *fp2=argv[4];
+    FILE *imageFile=fopen(fp1, "rb");
+    FILE *outputFile=fopen(fp2, "wb");
+    int msgLength=atoi(argv[3]);
+
+    BITMAP bm;
+    fread(&(bm.header), sizeof(HEADER), 1, imageFile);
+    fclose(imageFile);
+    // printHeader(&(bm.header));
+    int numOfPixels = bm.header.biHeight * bm.header.biWidth;
+    int padding = ((bm.header.biWidth) * 3) % 4;
+    // printf("\npadding %d\n", padding);
+    int dataBytes = numOfPixels * 3 + bm.header.biHeight * padding * 3;
+    bm.data = (BYTE *)malloc(sizeof(BYTE));
+    readData(fp1, &bm, dataBytes);
+    // int p;
+    // printf("**************************\n\n");
+    // for (p=0;p<1000;p++) {
+    //     printf("%u, ", bm.data[p]);
+    // }
+    // printf("**************************\n\n");
+    char *text = (char*)malloc(msgLength * sizeof(char));
+    int p;
+    // printf("**************************\n\n");
+    for (p=0;p<msgLength;p++) {
+        text[p]=0;
+        // printf("textttt %d, ", text[p]);
+    }
+    text[msgLength]='\0';
+    printf("\n*****************÷****************************************\n\n");
+    printf("%d\n", strlen(text));
+
+    int *bits=(int*)malloc(((msgLength-1)*8)*(sizeof(int)));
+
+    int *permutation = (int *)malloc(sizeof(int) * ((msgLength-1)*8));
+    permutation = createPermutationFunction(((msgLength-1)*8), 10);
+    int i=0;
+    int bit;
+    for (i=0;i<msgLength;i++) { 
+        bit=(bm.data[i] & 255) >> 7;
+        // printf("first %d\n", ((bm.data[i] & 255)>>7));
+        // printBinary(bm.data, i);
+        // printf("data[%d]: %u\n", i, bm.data[i]);
+        // printf("bit : %d\n\n", bit);
+        bits[i]=bit;
+    }
+
+    int temp;
+    int index;
+    int j=0;
+    for (i=0;i<((msgLength-1)*8);i++) {
+        // printf("***********************\n\n");
+        // for (j=0;j<10;j++) {
+        //     printf("%d, ", bits[j]);
+        // }
+        temp=bits[i];
+        index=permutation[i];
+        bits[i]=bits[index];
+        bits[index]=temp;
+        // for (j=0;j<10;j++) {
+        //     printf("%d, ", bits[j]);
+        // }
+    }
+    printf("\n*****************÷****************************************\n\n");
+    printf("%lu\n", strlen(text));
+    for (i=0;i<((msgLength-1)*8);i++) {
+        putBit(text, i, bits[i]);
+    }
+    
+    // printf("\n\npermutation*****************\n\n");
+    // for (i=0;i<dataBytes;i++) {
+    //     printf("%d, ", permutation[i]);
+    // }
+    printf("lets laugh \n%c", text[0]);
+
+}
+
+static void putBit(char *m, int n, int b) {
+    int totalSize=strlen(m)*8;
+    // printf("total size: %d\n", totalSize);
+    int index;
+    int bit;
+    if (n<totalSize) {
+    // printf("hmm");
+        index=n/8;
+        // printf("pow %d\n", (int)pow(2, 7 - n % 8));
+        // printf("%c\n", m[index]);
+        m[index]=m[index] | (int)pow(2, 7 - n % 8);
+        // printf("%c\n", m[index]);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -534,6 +636,7 @@ int main(int argc, char *argv[])
     char *enS = "-encodeStegano\0";
     char *decS = "-decodeStegano\0";
     char *encT = "-encodeText\0";
+    char *decT="-decodeText\0";
     printf("arg %s\n\n", argv[1]);
     if (strcmp(operation, l) == 0)
     {
@@ -556,5 +659,9 @@ int main(int argc, char *argv[])
     else if (strcmp(operation, encT) == 0)
     {
         encodeText(argc, argv);
+    }
+    else if (strcmp(operation, decT) == 0)
+    {
+        decodeText(argc, argv);
     }
 }
