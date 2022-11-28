@@ -559,12 +559,12 @@ void decodeText(int argc, char* argv[]) {
     int p;
     // printf("**************************\n\n");
     for (p=0;p<msgLength;p++) {
-        text[p]=0;
+        text[p]='0';
         // printf("textttt %d, ", text[p]);
     }
-    text[msgLength]='\0';
+    printf("%lu\n", strlen(text));
     printf("\n*****************÷****************************************\n\n");
-    printf("%d\n", strlen(text));
+    text[msgLength]='\0';
 
     int *bits=(int*)malloc(((msgLength-1)*8)*(sizeof(int)));
 
@@ -572,57 +572,67 @@ void decodeText(int argc, char* argv[]) {
     permutation = createPermutationFunction(((msgLength-1)*8), 10);
     int i=0;
     int bit;
-    for (i=0;i<msgLength;i++) { 
-        bit=(bm.data[i] & 255) >> 7;
-        // printf("first %d\n", ((bm.data[i] & 255)>>7));
-        // printBinary(bm.data, i);
-        // printf("data[%d]: %u\n", i, bm.data[i]);
-        // printf("bit : %d\n\n", bit);
+    //ta bits einai anakatwmena mesa sto bits[]
+    for (i=0;i<msgLength-1;i++) { 
+        bit=(bm.data[i] & 1);
+        printf("first %d\n", ((bm.data[i] & 1)));
+        printBinary(bm.data, i);
+        printf("data[%d]: %u\n", i, bm.data[i]);
+        printf("bit : %d\n\n", bit);
         bits[i]=bit;
     }
 
     int temp;
     int index;
     int j=0;
-    for (i=0;i<((msgLength-1)*8);i++) {
         // printf("***********************\n\n");
-        // for (j=0;j<10;j++) {
+        // for (j=0;j<1000;j++) {
         //     printf("%d, ", bits[j]);
         // }
+    for (i=0;i<((msgLength-1)*8);i++) {
+        // printf("bits[%d] %d bits[%d] %d\n", i, bits[i], permutation[i], bits[permutation[i]]);
         temp=bits[i];
         index=permutation[i];
         bits[i]=bits[index];
         bits[index]=temp;
-        // for (j=0;j<10;j++) {
-        //     printf("%d, ", bits[j]);
-        // }
     }
-    printf("\n*****************÷****************************************\n\n");
-    printf("%lu\n", strlen(text));
-    for (i=0;i<((msgLength-1)*8);i++) {
-        putBit(text, i, bits[i]);
-    }
-    
-    // printf("\n\npermutation*****************\n\n");
-    // for (i=0;i<dataBytes;i++) {
-    //     printf("%d, ", permutation[i]);
+        printf("bits[%d] %d bits[%d] %d\n", i, bits[i], permutation[i], bits[permutation[i]]);
+        for (j=0;j<30;j++) {
+            printf("%d, ", bits[j]);
+        }
+    // printf("\n*****************÷****************************************\n\n");
+    // printf("%lu\n", strlen(text));
+    // for (i=0;i<18/*((msgLength-1)*8)*/;i++) {
+    //     printf("bits[%d] %d\n", i, bits[i]);
+    //     putBit(text, i, bits[i]);
     // }
-    printf("lets laugh \n%c", text[0]);
+    
+    // // printf("\n\npermutation*****************\n\n");
+    // // for (i=0;i<dataBytes;i++) {
+    // //     printf("%d, ", permutation[i]);
+    // // }
+    // printf("lets laugh \n%c", text[0]);
 
 }
 
 static void putBit(char *m, int n, int b) {
     int totalSize=strlen(m)*8;
-    // printf("total size: %d\n", totalSize);
+    printf("total size: %d\n", totalSize);
     int index;
     int bit;
     if (n<totalSize) {
-    // printf("hmm");
+        printf("hmm\n");
         index=n/8;
-        // printf("pow %d\n", (int)pow(2, 7 - n % 8));
-        // printf("%c\n", m[index]);
-        m[index]=m[index] | (int)pow(2, 7 - n % 8);
-        // printf("%c\n", m[index]);
+        // bit = ((m[index] & (int)pow(2, 7 - n % 8)) << (0 + (n % 8))) >> 7;
+        printf("n: %d m[%d] %c\n", n, index, m[index]);
+        if (b==1) {
+            m[index]=m[index] | (int)pow(2, 7-n%8);
+            printf("indx 1 after %c\n", m[index]);
+        }
+        else {
+            m[index]=m[index] & (255-(int)pow(2, 7-n%8));
+            printf("index 0 after %c\n", m[index]);
+        }
     }
 }
 
