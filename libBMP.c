@@ -448,7 +448,7 @@ void encodeText(int argc, char *argv[])
     printf("%s", text);
 
     int b, o;
-    int *permutation = (int *)malloc(sizeof(int) * (fileSize * 8));
+    int *permutation;
     permutation = createPermutationFunction((fileSize * 8), 10);
     // printf("************************strlen %d", fileSize*8);
     // printf("\n\npermutation*****************\n\n");
@@ -530,27 +530,13 @@ static int *createPermutationFunction(int N, unsigned int systemkey)
         // printf("\nk %d\n", k);
         i = rand() % (N - 1);
         j = rand() % (N - 1);
-        // printf("i : %d j : %d\n", i, j);
-        // printf("arr[i] before %d\n", arr[i]);
-        // printf("arr[j] before %d\n", arr[j]);
         temp = arr[i];
         // printf("temp %d\n", arr[i]);
         arr[i] = arr[j];
         arr[j] = temp;
-        // printf("arr[i] after %d\n", arr[i]);
-        // printf("arr[j] after %d\n", arr[j]);
-        // for (p = 0; p < N; p++)
-        // {
-        //     printf("%d, ", arr[p]);
-        // }
+       
     }
-    // printf("%d %d\n", arr[1029], arr[1095]);
-    // for (k = 0; k < 50; k++)
-    // {
-    //     // arr[k] = k;
-    //     printf("%d, ", arr[k]);
-    // }
-    // printf("gamoto\n");
+ 
     return arr;
 }
 
@@ -573,57 +559,37 @@ void decodeText(int argc, char *argv[])
     bm.data = (BYTE *)malloc(sizeof(BYTE));
     readData(fp1, &bm, dataBytes);
     int p;
-    char *text = (char *)malloc(msgLength * sizeof(char));
+    BYTE *text = (BYTE *)malloc(msgLength * sizeof(BYTE));
 
-    for (p = 0; p < msgLength; p++)
-    {
-        text[p] = '0';
-    }
-    printf("size of text %lu\n", strlen(text));
-    printf("\n*****************÷****************************************\n\n");
     text[msgLength] = '\0';
-
-    int *bits = (int *)malloc(((msgLength - 1) * 8) * (sizeof(int)));
-    int *bitsSorted = (int *)malloc(((msgLength - 1) * 8) * (sizeof(int)));
 
     int *permutation = (int *)malloc(sizeof(int) * ((msgLength - 1) * 8));
 
     permutation = createPermutationFunction(((msgLength - 1) * 8), 10);
-    // for (p=0;p<(msgLength-1)*8;p++) {
-    //     printf("*%d, ", permutation[p]);
-    // }
+  
     int i = 0;
     int bit;
     int index = 0;
-    // pianw ta bits apo kathe databyte pou exei mesa kriptografimeno bit
-    // gemizw ton pinaka me bits me ta anaktamenwmena bits
+    char c;
+    int ind=0;
+    int counter=0;
+
     for (i = 0; i < (msgLength - 1) * 8; i++)
     {
         index = permutation[i];
         bit = (bm.data[index] & 1);
-        // printf("first %d\n", ((bm.data[i] & 1)));
-        // printBinary(bm.data, index);
-        // printf("data[%d]: %u\n", i, bm.data[i]);
-        // printf("bit : %d\n\n", bit);
-        bits[i] = bit;
+        c=c<<1;
+        c=c | bit;
+        counter++;
+        if (counter==8) {
+            text[ind]=c;
+            ind++;
+            counter=0;
+        }
     }
-    // printf("********* %d **********\n", i);
-    int temp;
-    int byte;
-    int j = 0;
-    for (i = 0; i < (msgLength - 1) * 8; i++)
-    {
-        byte = permutation[i];
-        printf("byte %d\n", permutation[i]);
-        bitsSorted[byte] = bits[i];
-    }
-    
-    for (j = 0; j < 30; j++)
-    {
-        printf("%d, ", bitsSorted[j]);
-    }
-
-    printf("lets laugh \n%d", (msgLength - 1) * 8);
+  
+    printf("%s ", text);
+    fwrite(text, msgLength, 1, outputFile);
 }
 
 static void putBit(char *m, int n, int b)
@@ -664,7 +630,7 @@ void stringToImage(int argc, char *argv[])
     fclose(fileImage);
     int numOfPixels = bm.header.biHeight * bm.header.biWidth;
     int padding = ((bm.header.biWidth) * 3) % 4;
-    // printf("\npadding %d\n", padding);
+    printf("\npadding %d\n", padding);
     int dataBytes = numOfPixels * 3 + bm.header.biHeight * padding * 3;
     bm.data = (BYTE *)malloc(sizeof(BYTE) * dataBytes);
     // readData(fp1, &bm, dataBytes);
@@ -694,64 +660,63 @@ void stringToImage(int argc, char *argv[])
     // printf("i: %d\n");
     text[fileSize] = '\0';
     // printf("%s", text);
-
+    // printf("**%s**\n", text);
     int bitsLen = fileSize * 8;
     int bits[bitsLen];
     for (i = 0; i < bitsLen; i++)
     {
         bits[i] = getBit(text, i);
+        // printf("%d, ", bits[i]);
     }
-    // TIPWMA TOU BITS SWSTA MESA KATAXWRHMENA
-    //  for (i=0;i<46;i++) {
-    //      printf("bits[%d]= %d\n", i, bits[i]);
-    //  }
-    printf("hmmm\n");
-  
-
-    // int k = 0;
-    // for (k = 0; k < dataBytes; k++)
-    // {
-    //     fwrite(&(bm.data[k]), sizeof(BYTE), 1, fp2);
-    // }
-    int j;
-    int index = 0;
-    BYTE pixel[3];
-    
-    for (i = bm.header.biHeight-1; i >= 0; i--)
+    for (i = 0; i < 50; i++)
     {
-        for (j = 0; j < bm.header.biWidth; j++)
-        {
-            bm.data[index] = 128 * getBit(text, (bm.header.biHeight * j) + i);
-            bm.data[index + 1] = 128 * getBit(text, (bm.header.biHeight * j) + i);
-            bm.data[index + 2] = 128 * getBit(text, (bm.header.biHeight * j) + i);
-            index += 3;
-            // fwrite(pixel, 3, 1, fp2);
+        // bits[i] = getBit(text, i);
+        printf("%d, ", bits[i]);
+    }
+
+    printf("\nhmmm\n");
+  
+    int **pixels=(int**)malloc(bm.header.biHeight*sizeof(int*));
+    for (i=0;i<bm.header.biHeight+padding;i++) {
+        //each row has width + padding
+        pixels[i]=(int*)malloc((bm.header.biWidth+padding)*sizeof(int));
+    }
+    printf("height %d\n", bm.header.biHeight);
+    printf("width %d\n", bm.header.biWidth);
+
+    int j=0;
+    int b=0;
+    for (i=0;i<bm.header.biHeight;i++) {
+        for (j=0;j<bm.header.biWidth;j++) {
+            printf("b %d\n", bits[b]);
+            pixels[i][j]=bits[b];
+            printf("pixels[%d][%d]=%d\n", i, j, pixels[i][j]);
+            b++;
         }
     }
+    printf("** %d\n", pixels[0][1]);
+    for (i=0;i<50;i++) {
+        for (j=0;j<1;j++) {
+            
+            printf("pixels[%d][%d]=%d\n", i, j, pixels[i][j]);
+            
+        }
+    }
+    
+    
     char new[100];
     char *fpNew = "new-";
     strcat(new, fpNew);
     // printf("file %s\n", fp1);
     strcat(new, fp1);
     // printf("new file : %s\n", c);
-    writeImage(bm, new, dataBytes);
-    // for (i = 0; i < bm.header.biWidth; i++)
-    // {
-    //     for (j = 0; j < bm.header.biHeight; j++)
-    //     {
-    //         pixel[0] = 128 * getBit(text, (bm.header.biHeight * i) + j);
-    //         pixel[1] = 128 * getBit(text, (bm.header.biHeight * i) + j);
-    //         pixel[2] = 128 * getBit(text, (bm.header.biHeight * i) + j);
-    //         // bm.data[index + 2] = 128 * getBit(text, (bm.header.biHeight * j) + i);
-    //         index += 3;
-    //         fwrite(pixel, 3, 1, fp2);
-    //     }
-    // }
-    // for (i = 0; i < 27; i++)
-    // {
-    //     printf("%d, ", bm.data[i]);
-    // }
-    
+    // writeImage(bm, new, dataBytes);
+    //********************************************* REMEMBER TO FREE LIKE BELOW
+    // for (int i = 0; i < r; i++)
+    //     free(arr[i]);
+ 
+    // free(arr);
+
 }
 
 int main(int argc, char *argv[])
