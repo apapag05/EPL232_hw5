@@ -534,9 +534,8 @@ static int *createPermutationFunction(int N, unsigned int systemkey)
         // printf("temp %d\n", arr[i]);
         arr[i] = arr[j];
         arr[j] = temp;
-       
     }
- 
+
     return arr;
 }
 
@@ -566,28 +565,29 @@ void decodeText(int argc, char *argv[])
     int *permutation = (int *)malloc(sizeof(int) * ((msgLength - 1) * 8));
 
     permutation = createPermutationFunction(((msgLength - 1) * 8), 10);
-  
+
     int i = 0;
     int bit;
     int index = 0;
     char c;
-    int ind=0;
-    int counter=0;
+    int ind = 0;
+    int counter = 0;
 
     for (i = 0; i < (msgLength - 1) * 8; i++)
     {
         index = permutation[i];
         bit = (bm.data[index] & 1);
-        c=c<<1;
-        c=c | bit;
+        c = c << 1;
+        c = c | bit;
         counter++;
-        if (counter==8) {
-            text[ind]=c;
+        if (counter == 8)
+        {
+            text[ind] = c;
             ind++;
-            counter=0;
+            counter = 0;
         }
     }
-  
+
     printf("%s ", text);
     fwrite(text, msgLength, 1, outputFile);
 }
@@ -668,55 +668,103 @@ void stringToImage(int argc, char *argv[])
         bits[i] = getBit(text, i);
         // printf("%d, ", bits[i]);
     }
-    for (i = 0; i < 50; i++)
-    {
-        // bits[i] = getBit(text, i);
-        printf("%d, ", bits[i]);
-    }
+    // for (i = 0; i < 50; i++)
+    // {
+    //     // bits[i] = getBit(text, i);
+    //     printf("*%d, ", bits[i]);
+    // }
 
     printf("\nhmmm\n");
-  
-    int **pixels=(int**)malloc(bm.header.biHeight*sizeof(int*));
-    for (i=0;i<bm.header.biHeight+padding;i++) {
-        //each row has width + padding
-        pixels[i]=(int*)malloc((bm.header.biWidth+padding)*sizeof(int));
+
+    BYTE **pixels = (BYTE **)malloc(bm.header.biHeight * sizeof(BYTE *));
+    for (i = 0; i < bm.header.biHeight + padding; i++)
+    {
+        // each row has width + padding
+        pixels[i] = (BYTE *)malloc((bm.header.biWidth + padding) * sizeof(BYTE));
     }
     printf("height %d\n", bm.header.biHeight);
     printf("width %d\n", bm.header.biWidth);
 
-    int j=0;
-    int b=0;
-    for (i=0;i<bm.header.biHeight;i++) {
-        for (j=0;j<bm.header.biWidth;j++) {
-            printf("b %d\n", bits[b]);
-            pixels[i][j]=bits[b];
-            printf("pixels[%d][%d]=%d\n", i, j, pixels[i][j]);
-            b++;
+    int j = 0;
+    int b = 0;
+    int p = 0;
+    int counter = 0;
+    for (i = 0; i < bm.header.biHeight; i++)
+    {
+        for (j = 0; j < bm.header.biWidth; j++)
+        {
+            // printf("b %d\n", bits[b]);
+            if (counter < bitsLen) //num of bits is smaller than num of pixels
+            {
+                // if (getBit(text, bm.header.biHeight*j+i) == 0)
+                // {
+                //     pixels[i][j] = 0;
+                // }
+                // else
+                // {
+                //     pixels[i][j] = 128;
+                // }
+                pixels[i][j] = 128 * getBit(text, bm.header.biHeight*i+j);
+                // printf("pixels[%d][%d]=%d\n", i, j, pixels[i][j]);
+                b++;
+                counter++;
+            }
+            else { //fill remaining cells with 0
+                // printf("extra %d\n", counter);
+                pixels[i][j] = 0;
+                counter++;
+            }
+        }
+        // add padding
+        for (p = 0; p < padding; p++)
+        {
+            // printf("j %d\n", j);
+            pixels[i][j] = 0;
+            // printf("pixels[%d][%d]=%d\n", i, j, pixels[i][j]);
+            j++;
         }
     }
-    printf("** %d\n", pixels[0][1]);
-    for (i=0;i<50;i++) {
-        for (j=0;j<1;j++) {
+    printf("pixels %d bits %d counter %d databytes %d\n", numOfPixels, bitsLen, counter, dataBytes);
+    // printf("** %d\n", pixels[0][1]);
+    // for (i=0;i<50;i++) {
+    //     for (j=0;j<50;j++) {
+
+    //         printf("pixels[%d][%d]=%u\n", i, j, pixels[i][j]);
+
+    //     }
+    // }
+
+    //fill data
+    counter=0;
+    for (j=bm.header.biWidth+padding-1;j>=0;j--) {
+        for (i=0;i<bm.header.biHeight;i++) {
+
             
-            printf("pixels[%d][%d]=%d\n", i, j, pixels[i][j]);
-            
+            bm.data[counter]=pixels[i][j];
+            bm.data[counter+1]=pixels[i][j];
+            bm.data[counter+2]=pixels[i][j];
+            // printf("pixels[%d][%d]=%u bm.data[%d]=%u\n", i, j, pixels[i][j], counter, bm.data[counter]);
+            // printf("pixels[%d][%d]=%u bm.data[%d]=%u\n", i, j, pixels[i][j], counter+1, bm.data[counter+1]);
+            // printf("pixels[%d][%d]=%u bm.data[%d]=%u\n", i, j, pixels[i][j], counter+2, bm.data[counter+2]);
+            counter+=3;
         }
     }
-    
-    
+    // printf("%d pixel\n", pixels[0][bm.header.biHeight-1]);
+    // printf("%d data \n", bm.data[0]);
+    // printf("%d pixel\n", pixels[5][bm.header.biHeight-1]);
+    // printf("%d data \n", bm.data[56]);
     char new[100];
     char *fpNew = "new-";
     strcat(new, fpNew);
     // printf("file %s\n", fp1);
     strcat(new, fp1);
     // printf("new file : %s\n", c);
-    // writeImage(bm, new, dataBytes);
+    writeImage(bm, new, dataBytes);
     //********************************************* REMEMBER TO FREE LIKE BELOW
     // for (int i = 0; i < r; i++)
     //     free(arr[i]);
- 
-    // free(arr);
 
+    // free(arr);
 }
 
 int main(int argc, char *argv[])
