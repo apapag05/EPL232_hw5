@@ -1,6 +1,7 @@
-# homework4 
+/**
+@mainpage EPL232 HW4    
 
-Team 26 : Andria-Maria Papageorgiou 1018366, Marios Epameinonda
+@author Team 26 : Andria-Maria Papageorgiou 1018366, Marios Epameinonda
 
 @brief This program implements libray bmplib.a which contains the 
 follow operations; a list with the header file of each given bitmap, 
@@ -9,3 +10,4 @@ in and from a bitmap, encode and decode Stegano by hiding and unhiding
 a bitmap from another one, and transforming a string to an image and
 the opposite; with a client as bmpSteganography.
 
+*/
