@@ -4,6 +4,17 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; type `show c' for details.
 Υou should have received a copy of the GNU General Public License along with 
 this program. If not, see <http://www.gnu.org/licenses/>.*/
+/**
+ * @file operations.c
+ * @brief This module implements operations of steganography such as 
+ * reading a bitmap and printing a header, grayscale, encode and 
+ * decode text etc.
+ * 
+ * @author Andria-Maria Papageorgiou, Marios Epameinonda
+ * 
+ * @bug No known bugs
+ * 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -147,7 +158,7 @@ void list(int argc, char *argv[])
         int numOfPixels = bm.header.biHeight * bm.header.biWidth;
         int padding = ((bm.header.biWidth) * 3) % 4;
         int dataBytes = numOfPixels * 3 + bm.header.biHeight * padding * 3;
-
+    
         bm.data = (BYTE *)malloc(sizeof(BYTE) * dataBytes);
         readData(filename, &bm, dataBytes);
 
@@ -262,6 +273,7 @@ static void printBinary(BYTE *data, int index)
 
 void decodeStegano(int argc, char *argv[])
 {
+    // printf("EEeeeeee");
     int nbits = atoi(argv[2]);
     char *filename = argv[3];
     FILE *fp = fopen(filename, "rb");
@@ -707,7 +719,7 @@ int main()
     decodeText(5, argvDecTxt);
     char *argvStrBmp[4] = {"./bmpSteganography", "-stringToImage", "tux-pirate.bmp", "strFile.txt"};
     stringToImage(4, argvStrBmp);
-    char *argvBmpStr[3] = {"./bmpSteganography", "-imageToString", "encryptedTextImage.bmp";
+    char *argvBmpStr[3] = {"./bmpSteganography", "-imageToString", "new-tux-pirate.bmp";
     imageToString(3, argvBmpStr);
 
 

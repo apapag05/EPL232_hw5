@@ -1,3 +1,9 @@
+/* bmplib.h Copyright (C) 2022 Andria-Maria Papageorgiou Marios Epameinonda
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. 
+This is free software, and you are welcome to redistribute it
+under certain conditions; type `show c' for details.
+Υou should have received a copy of the GNU General Public License along with 
+this program. If not, see <http://www.gnu.org/licenses/>.*/
 /**
  * @file bmplib.h
  * @brief This header contains the prototypes of the library bmplib.a
@@ -7,12 +13,6 @@
  * @bug No known bugs
  * 
  */
-/* bmplib.h Copyright (C) 2022 Andria-Maria Papageorgiou Marios Epameinonda
-This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. 
-This is free software, and you are welcome to redistribute it
-under certain conditions; type `show c' for details.
-Υou should have received a copy of the GNU General Public License along with 
-this program. If not, see <http://www.gnu.org/licenses/>.*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

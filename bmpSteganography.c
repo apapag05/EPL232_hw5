@@ -4,6 +4,16 @@ This is free software, and you are welcome to redistribute it
 under certain conditions; type `show c' for details.
 Υou should have received a copy of the GNU General Public License along with 
 this program. If not, see <http://www.gnu.org/licenses/>.*/
+/**
+ * @file bmpSteganography.c
+ * @brief This module is the main function in which *argv[] is given from terminal
+ * and the program executes the desired operation.
+ * 
+ * @author Andria-Maria Papageorgiou, Marios Epameinonda
+ * 
+ * @bug No known bugs
+ * 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
